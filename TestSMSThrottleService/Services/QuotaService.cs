@@ -48,7 +48,7 @@ namespace TestSMSThrottleService.Services
 
         private void ResetCounters()
         {
-            Console.WriteLine(JsonConvert.SerializeObject(Status().Value) + ", Resetting counters. " + DateTime.Now.ToString());
+            Console.WriteLine(JsonConvert.SerializeObject(Status(null).Value) + ", Resetting counters. " + DateTime.Now.ToString());
             Monitor.Enter(perNumberCounters);
             accountCounter = 0;
             intervalTotalCounter = 0;
@@ -96,10 +96,12 @@ namespace TestSMSThrottleService.Services
                 return false;
         }
 
-        public JsonResult Status()
+        public JsonResult Status(string? number)
         {
-            JsonResult res = new(new object[] { "Requests per sec: "+intervalTotalCounter*1000/COUNTER_RESET_INTERVAL, "AccountCounter: "+accountCounter/*, perNumberCounters*/ });
-            return res;
+            if(string.IsNullOrEmpty(number))
+                return new(new object[] { "Requests per sec: "+intervalTotalCounter*1000/COUNTER_RESET_INTERVAL, "AccountCounter: "+accountCounter/*, perNumberCounters*/ });
+            else
+                return new(perNumberCounters.ContainsKey(number)?perNumberCounters[number]:0);
         }
     }
 }

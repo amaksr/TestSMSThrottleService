@@ -8,17 +8,20 @@ namespace TestSMSThrottleService.Services
 {
     public class ClientEmulatorService
     {
+        const int NUMBERS_PER_CLIENT = 10;
         TcpClient tcpClient = new TcpClient();
 
-        byte[][] data = new byte[128][];
+        byte[][] numbersPool = new byte[NUMBERS_PER_CLIENT][];
 
-        public ClientEmulatorService()
+        public ClientEmulatorService(int clientId)
         {
-            for (int i = 0; i < data.Length; i++)
+            for (int i = 0; i < numbersPool.Length; i++)
             {
-                data[i] = new byte[10];
-                string s = (new Random().Next()).ToString();
-                System.Text.Encoding.Default.GetBytes(s, data[i]);
+                numbersPool[i] = new byte[10];
+//                string s = (new Random().Next()).ToString();
+                string s = (clientId * 100 + i).ToString();
+                s = s.Length<=10?s:s.Substring(0,10);
+                System.Text.Encoding.Default.GetBytes(s, numbersPool[i]);
             }
         }
 
@@ -30,11 +33,10 @@ namespace TestSMSThrottleService.Services
                 int cnt = 0;
                 while (true)
                 {
-                    byte[] d = data[new Random().Next() % data.Length];
-                    tcpClient.GetStream().Write(d, 0, d.Length);
-                    tcpClient.GetStream().Read(d, 0, 1);
-                    if (cnt++ % 65536 == 0)
-                        Console.WriteLine((char)d[0]);
+                    byte[] number = numbersPool[new Random().Next() % numbersPool.Length];
+                    byte[] r = new byte[1];
+                    tcpClient.GetStream().Write(number, 0, number.Length);
+                    tcpClient.GetStream().Read(r, 0, 1);
                 }
             });
 
@@ -47,11 +49,12 @@ namespace TestSMSThrottleService.Services
             int cnt = 0;
             while(true)
             {
-                byte[] d = data[new Random().Next() % data.Length];
+                byte[] d = numbersPool[new Random().Next() % numbersPool.Length];
+                byte[] r = new byte[1];
                 await tcpClient.GetStream().WriteAsync(d, 0, d.Length);
-                await tcpClient.GetStream().ReadAsync(d, 0, 1);
+                await tcpClient.GetStream().ReadAsync(r, 0, 1);
                 if(cnt++%65536 == 0)
-                    Console.WriteLine(d[0]);
+                    Console.WriteLine(r[0]);
             }
         }
 
@@ -60,9 +63,11 @@ namespace TestSMSThrottleService.Services
             Thread thread = new Thread(() =>
             {
                 int cnt = 0;
-                string[] nums = new string[128];
-                for(int i=0; i<nums.Length; i++)
-                    nums[i] = new Random().Next().ToString();
+                string[] nums = new string[NUMBERS_PER_CLIENT];
+                for (int i = 0; i < nums.Length; i++)
+                {
+                    nums[i] = i==0?"888":new Random().Next().ToString();
+                }
 
                 while (true)
                 {

@@ -14,9 +14,9 @@ namespace TestSMSThrottleService.Controllers
         }
 
         [HttpGet]
-        public JsonResult Index()
+        public JsonResult Index(string? number)
         {
-            return _quotaService.Status();
+            return _quotaService.Status(number);
         }
 
         [HttpPost]

@@ -55,13 +55,14 @@ namespace TestSMSThrottleService.Services
                 return;
             }
 //            Console.WriteLine("Recieved " + size + " bytes");
-            string s = System.Text.Encoding.Default.GetString(buffer).Substring(0, size).ReplaceLineEndings("");
+            string s = System.Text.Encoding.Default.GetString(buffer).TrimEnd((Char)0).ReplaceLineEndings("");
             if (!string.IsNullOrEmpty(s))
             {
 //                Console.WriteLine("Recieved string: " + s);
                 bool quotaExists = _quotaService.CountAndCheck(s);
-                System.Text.Encoding.Default.GetBytes(quotaExists?"1":"0", buffer);
-                await stream.WriteAsync(buffer.AsMemory(0, 1));
+                byte[] obuffer = new byte[1];
+                System.Text.Encoding.Default.GetBytes(quotaExists?"1":"0", obuffer);
+                await stream.WriteAsync(obuffer);
             }
             _ = Task.Run(() => { TcpConnectionTask(tcpClient); });
         }
