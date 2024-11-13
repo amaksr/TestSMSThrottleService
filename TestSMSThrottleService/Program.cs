@@ -29,13 +29,13 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Test performance of Quota Service using multiple client threads connecting via TCP sockets
-for(int i=0; i< 20; i++) {
+for(int i=0; i< 10; i++) {
     ClientEmulatorService client1 = new();
-    client1.RunUsingThreadsViaTCP();
-    //client1.RunUsingThreadsViaDirectMethodCall(quotaService);
+    //client1.RunUsingThreadsViaDirectMethodCall(quotaService);     // 7539k requests/s
+    //client1.RunUsingThreadsViaTCP();                              // 122K requests/s
+    client1.RunUsingTasksViaTCP();                                  // 133k requests/s
 }
 
-// Test performance of quota service using local method c
 
 app.Run();
 

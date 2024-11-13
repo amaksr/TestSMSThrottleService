@@ -9,10 +9,10 @@ namespace TestSMSThrottleService.Services
 {
     public class QuotaService
     {
-        const int MAX_TOTAL_COUNTER = 10;
-        const int MAX_PER_NUM_COUNTER = 5;
+        const int MAX_TOTAL_COUNTER = 10000;
+        const int MAX_PER_NUM_COUNTER = 50000;
 
-        const int COUNTER_RESET_INTERVAL = 5000;
+        const int COUNTER_RESET_INTERVAL = 1000;
 
         static int totalCounter = 0;
         static long intervalTotalCounter = 0;
@@ -38,12 +38,7 @@ namespace TestSMSThrottleService.Services
                     long end = DateTimeOffset.Now.ToUnixTimeMilliseconds();
                     if (end - start > COUNTER_RESET_INTERVAL)
                     {
-                        Console.WriteLine(JsonConvert.SerializeObject(Status().Value) + ", Resetting counters. " + DateTime.Now.ToString());
-                        Monitor.Enter(perNumberCounters);
-                        accountCounter = 0;
-                        intervalTotalCounter = 0;
-                        perNumberCounters.Clear();
-                        Monitor.Exit(perNumberCounters);
+                        ResetCounters();
                         start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
                     }
                 }
@@ -51,15 +46,20 @@ namespace TestSMSThrottleService.Services
             resetThread.Start();
         }
 
-        public async void ResetTask() 
+        private void ResetCounters()
         {
-            await Task.Delay(COUNTER_RESET_INTERVAL);
-            Console.WriteLine(JsonConvert.SerializeObject(Status().Value) + ", Resetting counters. "+ DateTime.Now.ToString());
+            Console.WriteLine(JsonConvert.SerializeObject(Status().Value) + ", Resetting counters. " + DateTime.Now.ToString());
             Monitor.Enter(perNumberCounters);
             accountCounter = 0;
             intervalTotalCounter = 0;
             perNumberCounters.Clear();
             Monitor.Exit(perNumberCounters);
+        }
+
+        public async void ResetTask() 
+        {
+            await Task.Delay(COUNTER_RESET_INTERVAL);
+            ResetCounters();
             _ = Task.Run(ResetTask);
         }
         public bool CountAndCheck(string number)
@@ -98,7 +98,7 @@ namespace TestSMSThrottleService.Services
 
         public JsonResult Status()
         {
-            JsonResult res = new(new object[] { intervalTotalCounter*1000/COUNTER_RESET_INTERVAL, accountCounter/*, perNumberCounters*/ });
+            JsonResult res = new(new object[] { "Requests per sec: "+intervalTotalCounter*1000/COUNTER_RESET_INTERVAL, "AccountCounter: "+accountCounter/*, perNumberCounters*/ });
             return res;
         }
     }
